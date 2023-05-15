@@ -1,0 +1,26 @@
+Analysis pipeline:
+
+#1. Simulations run in SLiM:
+
+#For weakly deleterious background
+for i in $(seq 1 200); do slim -d GENOMESIZE=30000 -d MU=2.135e-6 -d INIT=1 -d K=1e5 -d REPRO=1 -d RUNTIME=168 -d R=5.5e-5 -d XI=0.003 -d BURSTN=100 -d "OUTPUTSTEM='results/DFE/DFE1_rep$i'" -d d_f0=0.1 -d d_f1=0.7 -d d_f2=0.1 -d d_f3=0.1 -d simID="$i" sc2_DFE.slim
+
+#For strongly deleterious background
+for i in $(seq 1 200); do slim -d GENOMESIZE=30000 -d MU=2.135e-6 -d INIT=1 -d K=1e5 -d REPRO=1 -d RUNTIME=168 -d R=5.5e-5 -d XI=0.003 -d BURSTN=100 -d "OUTPUTSTEM='results/DFE/DFE2_rep$i'" -d d_f0=0.1 -d d_f1=0.1 -d d_f2=0.1 -d d_f3=0.7 -d simID="$i" sc2_DFE.slim
+
+#For weakly deleterious background + beneficial mutation
+for i in $(seq 1 200); do slim -d GENOMESIZE=30000 -d MU=2.135e-6 -d INIT=1 -d K=1e5 -d REPRO=1 -d RUNTIME=168 -d R=5.5e-5 -d XI=0.003 -d BURSTN=100 -d "OUTPUTSTEM='results/DFE_beneficial/DFE1_rep$i'" -d d_f0=0.1 -d d_f1=0.7 -d d_f2=0.1 -d d_f3=0.1 -d simID="$i" sc2_DFE_beneficial.slim
+
+#For strongly deleterious background + beneficial mutation
+for i in $(seq 1 200); do slim -d GENOMESIZE=30000 -d MU=2.135e-6 -d INIT=1 -d K=1e5 -d REPRO=1 -d RUNTIME=168 -d R=5.5e-5 -d XI=0.003 -d BURSTN=100 -d "OUTPUTSTEM='results/DFE_beneficial/DFE2_rep$i'" -d d_f0=0.1 -d d_f1=0.1 -d d_f2=0.1 -d d_f3=0.7 -d simID="$i" sc2_DFE_beneficial.slim
+
+
+#2. pi_N and pi_S calculated:
+
+#For whole-genome estimates
+python3 get_summary_stats.py -msFile "rep1.ms" -fixedFile "rep1.fixed" -outPath  "rep1.stats" -regionLen 30000 -samples 100 -l_threshold 0.025 -u_threshold 0.5
+
+#For 3 non-overlapping 10kb windows
+python3 get_windowed_summary_stats.py -msFile "rep1.ms" -fixedFile "rep1.fixed" -outPath  "rep1.stats" -regionLen 30000 -samples 100 -l_threshold 0.025 -u_threshold 0.5
+
+#piN and piS plotted using jupyter (see plot_piN_piS.ipynb)
