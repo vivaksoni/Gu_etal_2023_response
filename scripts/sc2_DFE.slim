@@ -1,12 +1,11 @@
 //slim -d GENOMESIZE=30000 -d MU=2.135e-6 -d INIT=1 -d K=1e5 -d REPRO=1 -d RUNTIME=168 -d R=5.5e-5 -d XI=0.003 
 //-d BURSTN=100 -d "OUTPUTSTEM='DFE1_rep1'" -d d_f0=0.1 -d d_f1=0.7 -d d_f2=0.1 -d d_f3=0.1 
-//-d simID="$i" sc2_DFE.slim
+//-d simID="$i" sc2_DFE_beneficial.slim
 
 initialize()
 {
 	//start the clock
 	defineGlobal("start", clock());
-	defineGlobal("AF_check", T); //Boolean used once files are output at AF>=0.5
 	initializeSLiMModelType("nonWF");
 	//initialize mutation rate
 	initializeMutationRate(MU);
@@ -18,7 +17,6 @@ initialize()
     initializeMutationType("m2", 0.5, "s", "return runif(1, -0.01, -0.001);"); //weakly deleterious 
     initializeMutationType("m3", 0.5, "s", "return runif(1, -0.1, -0.01);"); //moderately deleterious 
     initializeMutationType("m4", 0.5, "s", "return runif(1, -1, -0.1);"); //strongly deleterious 
-    initializeMutationType("m0", 1.0, "f", 10); //Beneficial
 	 initializeGenomicElementType("g1", c(m1, m2, m3, m4), c(d_f0, d_f1, d_f2, d_f3));
 	 //Add neutral genomic element class for 3rd position
 	 initializeGenomicElementType("g2", 1, 1);
@@ -97,80 +95,21 @@ reproduction()
 
 168 early()
 {
-    // save the state of the simulation
-	sim.outputFull(OUTPUTSTEM + '_' +  simID +  ".txt");
-	target = sample(p1.individuals, 1);
-	target.genome1.addNewDrawnMutation(m0, 15001);
+	print("Default output");
+	print("Peak Mem Usage: " + usage(peak = T));
+	print("Runtime: " + (clock()-start));
+	print(size(p1.individuals));
 	
+	//output fixed mutations
+	sim.outputFixedMutations(filePath = getwd() +"/"+ OUTPUTSTEM + ".fixed");
+	//output neutral mutations
+	m1muts = sim.mutationsOfType(m1);
+   sim.outputMutations(m1muts, filePath = getwd() +"/"+ OUTPUTSTEM + ".neutral");
+	//output sample of 100
+	outputSample = sample(p1.individuals, 100);
+	outputSample.genome1.outputMS(filePath = getwd() +"/"+ OUTPUTSTEM + "_100.ms", filterMonomorphic = F);
+	print("Total Runtime: " + (clock()-start));
+	sim.simulationFinished();
+
 }
 
-168:1680 late()
-{
-
-	mut = sim.mutationsOfType(m0);
-	
-	if (size(mut) == 1)
-	{
-		if ((sim.mutationFrequencies(NULL, mut) >= 0.5) & (AF_check))
-		{
-		   defineGlobal("AF_check", F);
-			print("Default output");
-			print("Peak Mem Usage: " + usage(peak = T));
-			print("Runtime: " + (clock()-start));
-			print(size(p1.individuals));
-			
-			//output fixed mutations
-			sim.outputFixedMutations(filePath = getwd() +"/"+ OUTPUTSTEM + "_0.5.fixed");
-			//output neutral mutations
-			m1muts = sim.mutationsOfType(m1);
-		   sim.outputMutations(m1muts, filePath = getwd() +"/"+ OUTPUTSTEM + "_0.5.neutral");
-			//output sample of 100
-			outputSample = sample(p1.individuals, 100);
-			outputSample.genome1.outputMS(filePath = getwd() +"/"+ OUTPUTSTEM + "_0.5_100.ms", filterMonomorphic = F);
-			print("Beneficial mutation has reached AF>0.5. Files output.");
-			print("Total Runtime: " + (clock()-start));
-			
-
-		}
-	}
-	else if (sim.countOfMutationsOfType(m0) == 0)
-	{
-		fixed = (sum(sim.substitutions.mutationType == m0) == 1);
-		
-		
-		if (fixed)
-		{
-			print("Default output");
-			print("Peak Mem Usage: " + usage(peak = T));
-			print("Runtime: " + (clock()-start));
-			print(size(p1.individuals));
-			
-			//output fixed mutations
-			sim.outputFixedMutations(filePath = getwd() +"/"+ OUTPUTSTEM + "_1.0.fixed");
-			//output neutral mutations
-			m1muts = sim.mutationsOfType(m1);
-		   sim.outputMutations(m1muts, filePath = getwd() +"/"+ OUTPUTSTEM + "_1.0.neutral");
-			//output sample of 100
-			outputSample = sample(p1.individuals, 100);
-			outputSample.genome1.outputMS(filePath = getwd() +"/"+ OUTPUTSTEM + "_1.0_100.ms", filterMonomorphic = F);
-			print("Default output completed. Ending simulation now...");
-			print("Total Runtime: " + (clock()-start));
-			sim.simulationFinished();
-
-		}
-		else
-		{
-			print(simID + ": LOST - RESTARTING\n");
-			
-			// go back to generation 1000
-			sim.readFromPopulationFile(OUTPUTSTEM + '_' +  simID +  ".txt");
-			
-			// start a newly seeded run
-			setSeed(rdunif(1, 0, asInteger(2^62) - 1));
-			
-			// re-introduce the sweep mutation
-			target = sample(p1.individuals.genomes, 1);
-			target.addNewDrawnMutation(m0, 15001);
-		}
-	}
-}
